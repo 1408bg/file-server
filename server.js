@@ -53,7 +53,8 @@ app.get('*', async (req, res) => {
       res.sendFile(requestedPath);
     }
   } catch (error) {
-    res.status(404).send('<h1>404 Not Found</h1>');
+    console.error(error);
+    res.status(404).send(`<h1>Error Detected</h1><code><pre>${error}</pre></code>`);
   }
 });
 
