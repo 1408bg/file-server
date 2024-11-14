@@ -41,9 +41,9 @@ app.get('*', async (req, res) => {
 
       files.forEach(file => {
         if (file.isDirectory) {
-          html += `<li><a href="${file.path.split('public')[1]}">${file.name}/</a></li>`;
+          html += `<li><a href="${file.path.split('public\\')[1]}">${file.name}/</a></li>`;
         } else {
-          html += `<li><a href="/file/${file.path.split('public')[1]}">${file.name}</a></li>`;
+          html += `<li><a href="/file/${file.path.split('public\\')[1]}">${file.name}</a></li>`;
         }
       });
       
