@@ -32,18 +32,18 @@ app.get('/file/*', (req, res) => {
 
 app.get('*', async (req, res) => {
   let requestedPath = path.join(rootDir, req.path);
-
   try {
     const stats = fs.statSync(requestedPath);
-    if (stats.isDirectory()) {
+    if (stats.mode === 16822) {
       const files = await getDirectoryList(requestedPath);
       let html = `<h1>Directory listing: ${req.path}</h1><ul>`;
-      
+
+
       files.forEach(file => {
-        if (file.isDirectory()) {
-          html += `<li><a href="${path.relative(rootDir, file.path)}">${file.name}/</a></li>`;
+        if (file.isDirectory) {
+          html += `<li><a href="${file.path.split('public')[1]}">${file.name}/</a></li>`;
         } else {
-          html += `<li><a href="/file/${path.relative(rootDir, file.path)}">${file.name}</a></li>`;
+          html += `<li><a href="/file/${file.path.split('public')[1]}">${file.name}</a></li>`;
         }
       });
       
@@ -53,11 +53,11 @@ app.get('*', async (req, res) => {
       res.sendFile(requestedPath);
     }
   } catch (error) {
-    console.error(error);
+    console.log(error);
     res.status(404).send(`<h1>Error Detected</h1><code><pre>${error}</pre></code>`);
   }
 });
 
 app.listen(port, () => {
-  console.log(`서버가 http://localhost:${port} 에서 실행 중입니다.`);
+  console.log(`port: ${port}`);
 });
