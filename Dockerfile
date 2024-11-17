@@ -1,2 +1,7 @@
-http://192.168.253.23:8000/createHwp
-C:\\Users\\user\\Downloads\\a.hwp
+FROM node:16
+WORKDIR /usr/src/app
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 3000
+CMD ["node", "server.js"]
