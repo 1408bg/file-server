@@ -2,10 +2,11 @@ import { Decoratable } from '../../entity/data.mjs';
 import { Position, Color } from '../../graphic/data.mjs';
 
 class Weapon extends Decoratable {
-  constructor(position, size, imagePath, hitboxPosition, hitboxSize, damage, anchor) {
+  constructor(position, size, imagePath, hitboxPosition, hitboxSize, damage, anchor, skillCooldown) {
     super(position, size, imagePath, 0, undefined, anchor);
     this.layer = 11;
     this.damage = damage;
+    this.skillCooldown = skillCooldown;
 
     this.hitboxOffset = hitboxPosition;
     this.hitbox = new Decoratable(
@@ -19,6 +20,7 @@ class Weapon extends Decoratable {
 
     this.isActive = false;
     this.skillHitted = false;
+    this.force = 1;
   }
 
   render() {
@@ -40,6 +42,10 @@ class Weapon extends Decoratable {
 
   deactivate() {
     this.isActive = false;
+  }
+
+  setForce(force) {
+    this.force = force;
   }
 
   setPosition({x, y}) {

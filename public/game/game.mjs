@@ -17,15 +17,24 @@ class Game {
   constructor(root) {
     this.root = root;
     this.root.game = this;
-    this.root.classList.add("__rnini_root__")
-    this.root.style.position = "relative";
-    this.root.style.overflow = "hidden";
+    this.platform =  (()=>{
+      const userAgent = navigator.userAgent;
+      if(/iPhone|iPad|iPod/.test(userAgent) && /CriOS|FxiOS|WebKit/.test(userAgent)) return 'IOS';
+      if (/android/i.test(userAgent) || /wv/.test(userAgent)) return 'ANDROID';
+      return 'WEB';
+    })();
+    this.root.classList.add('__rnini_root__');
+    this.root.style.position = 'relative';
+    this.root.style.overflow = 'hidden';
+    this.root.style.userSelect = 'none';
+    this.root.oncontextmenu = ()=>false;
     this.coroutineManager = new CoroutineManager();
     this.offset = root.getBoundingClientRect();
     this.width = root.clientWidth;
     this.height = root.clientHeight;
     this.entities = new Map();
     this.keyboardEventListeners = new Set();
+    this.mouseEventListeners = new Set();
     this.elements = new Set();
     this.eventListeners = new Map();
     
@@ -38,6 +47,18 @@ class Game {
     this.eventListeners.set('keydown', event => handleKeyEvent('keydown', event));
     this.eventListeners.set('keyup', event => handleKeyEvent('keyup', event));
     this.eventListeners.set('keypress', event => handleKeyEvent('keypress', event));
+
+    const handleMouseEvent = (type, event) => {
+      const button = event.button === 0 ? 'left' : event.button === 2 ? 'right' : null;
+      if (button) {
+        this.mouseEventListeners.forEach(listener => {
+          listener(type, button, event);
+        });
+      }
+    };
+
+    this.eventListeners.set('mousedown', event => handleMouseEvent('mousedown', event));
+    this.eventListeners.set('mouseup', event => handleMouseEvent('mouseup', event));
     
     this.eventListeners.forEach((handler, type) => {
       document.body.addEventListener(type, handler);
@@ -104,6 +125,25 @@ class Game {
   */
   removeKeyboardEventListener(listener) {
     this.keyboardEventListeners.delete(listener);
+  }
+
+  /**
+  * 마우스 클릭 이벤트를 핸들링하는 콜백 함수를 등록합니다.
+  * 마우스 클릭 시, 호출됩니다.
+  * @param {Function} listener (String, KeyboardEvent)=>void
+  * @returns {Function} listener
+  */
+  addMouseEventListener(listener) {
+    this.mouseEventListeners.add(listener);
+    return listener;
+  }
+
+  /**
+  * 등록된 마우스 이벤트 리스너를 제거합니다.
+  * @param {Function} listener 제거할 리스너 함수
+  */
+  removeMouseEventListener(listener) {
+    this.mouseEventListeners.delete(listener);
   }
 
   /**

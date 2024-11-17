@@ -14,7 +14,7 @@ const game = new Game(root);
 let playing = true;
 let genCount = 0;
 let stage = 1;
-const groundHeight = game.height/2+180;
+const groundHeight = game.height/2+50;
 const palette = [
   Color.fromHex('#999999'),
   Color.fromHex('#4CEDE5'),
@@ -44,44 +44,44 @@ const options = [
   },
   {
     title: '내구도 증가',
-    description: '최대체력을 10 증가시킨다.',
+    description: '최대체력을 15 증가시킨다.',
     type: 2,
     value: 10,
     level: 1
   },
   {
     title: '내구도 증가+',
-    description: '최대체력을 25 증가시킨다.',
+    description: '최대체력을 30 증가시킨다.',
     type: 2,
     value: 25,
     level: 2
   },
   {
     title: '내구도 증가++',
-    description: '최대체력을 50 증가시킨다.',
+    description: '최대체력을 60 증가시킨다.',
     type: 2,
     value: 50,
     level: 3
   },
   {
     title: '가속',
-    description: '이동 속도를 0.5 증가시킨다.',
+    description: '이동 속도를 0.4 증가시킨다.',
     type: 3,
-    value: 0.5,
+    value: 0.4,
     level: 1
   },
   {
     title: '가속+',
-    description: '이동 속도를 1 증가시킨다.',
+    description: '이동 속도를 0.8 증가시킨다.',
     type: 3,
-    value: 1,
+    value: 0.8,
     level: 2
   },
   {
     title: '가속++',
-    description: '이동 속도를 2 증가시킨다.',
+    description: '이동 속도를 1.5 증가시킨다.',
     type: 3,
-    value: 2,
+    value: 1.5,
     level: 3
   },
   {
@@ -93,20 +93,37 @@ const options = [
   },
   {
     title: '광폭화',
-    description: '최대체력을 50% 경감하고 공격력을 100% 증가시킨다.',
+    description: '최대체력을 30% 경감하고 공격력을 20% 증가시킨다.',
     type: 5,
-    value: NaN,
+    value: [0.7, 1.2],
+    level: 1
+  },
+  {
+    title: '광폭화+',
+    description: '최대체력을 40% 경감하고 공격력을 50% 증가시킨다.',
+    type: 5,
+    value: [0.6, 1.5],
     level: 2
+  },
+  {
+    title: '광폭화++',
+    description: '최대체력을 50% 경감하고 공격력을 80% 증가시킨다.',
+    type: 5,
+    value: [0.5, 1.8],
+    level: 3
   }
 ]
 const enemys = [];
 let boss;
 
-const groundPrefab = new Prefab(new Entity(
-  new Position(0, 0),
-  new Size(game.width, 10),
-  Color.fromHex('#777777')
-), game);
+const groundPrefab = new Prefab(
+  new Entity(
+    new Position(0, 0),
+    new Size(game.width, 10),
+    Color.fromHex('#777777')
+  ),
+  game
+);
 
 groundPrefab.instantiate(
   (e) => {
@@ -197,28 +214,29 @@ const onLevelUp = async () => {
         .build()
       )
       .setHoverStyles({
-        'transform': 'scale(1.025)'
+        'transform': 'scale(1.05)'
       })
       .onClick(()=>{
         resume();
-        switch(options[index].type) {
+        const option = options[index];
+        switch(option.type) {
           case 1:
-            player.weapon.damage += options[index].value;
+            player.weapon.damage += option.value;
             break;
           case 2:
-            player.maxHealth += options[index].value;
-            player.addHealth(options[index].value);
+            player.maxHealth += option.value;
+            player.addHealth(option.value);
             break;
           case 3:
-            player.moveSpeed += options[index].value;
+            player.moveSpeed += option.value;
             break;
           case 4:
             player.clearHealth();
             break;
           case 5:
-            player.weapon.damage *= 2;
-            player.maxHealth /= 2;
-            player.addHealth(-player.health/2);
+            player.maxHealth *= option.value[0];
+            player.weapon.damage *= option.value[1];
+            player.addHealth(-player.health*option.value[0]);
         }
         game.removeElement(overlay);
         resolve();
@@ -266,28 +284,28 @@ function genEnemy(x) {
 function genBoss() {
   boss = new Sandbag(
     game,
-    new Position(100, groundHeight-10),
+    new Position(-100, groundHeight-10),
     () => {
       boss = null;
       if (stage === 1) {
         const dialog = new AlertDialog(
           '무기 스킬 획득',
-          '(a)키를 통하여 낫 투척 사용 가능',
+          '우클릭을 통하여 낫 투척 사용 가능',
           {
             actions: [
               {
                 text: '확인',
                 color: palette[2],
                 onClick: () => {
-                  this.player.canWeaponSkill = true;
+                  player.canWeaponSkill = true;
                   dialog.close();
-                  resume();
+                  if (!player.isProcessingLevelUp) resume();
                 }
               }
             ]
           }
         );
-        dialog.show();
+        dialog.show(game);
         pause();
         game.startCoroutine(stage2);
       } else {
@@ -307,8 +325,8 @@ function *stage1() {
   stage = 1;
   while (genCount < 10){
     if (enemys.length < 10 && playing) {
-      genEnemy(game.width - 100);
-      genEnemy(100);
+      genEnemy(game.width + 100);
+      genEnemy(-100);
     }
     yield waitForDuration(new Duration({second: 6}));
   }
@@ -323,8 +341,8 @@ function *stage2() {
   stage = 2;
   while (genCount < 30) {
     if (playing) {
-      genEnemy(game.width - 100);
-      genEnemy(100);
+      genEnemy(game.width + 100);
+      genEnemy(-100);
     }
     yield waitForDuration(new Duration({milisecond: 250}));
   }
@@ -332,6 +350,59 @@ function *stage2() {
     yield null;
   }
   genBoss();
+}
+
+if (1 | game.platform !== 'WEB') {
+  const uiContainer = new HTMLBuilder('div')
+  .setSize(new Size(game.width))
+  .setLayer(31)
+  .flex('center', 'center', 'row', 10)
+  .setPosition(new Position(0, game.height-300))
+  .append(
+    new HTMLBuilder('div')
+    .column(
+      new HTMLBuilder('button')
+      .button(
+        'W',
+        () => player.jump()
+      ).build(),
+      new HTMLBuilder('div')
+      .row(
+        new HTMLBuilder('button')
+        .button(
+          'A',
+          () => player.moveLeft(),
+          {
+            onUp: () => player.stopLeft()
+          }
+        ).build(),
+        new HTMLBuilder('button')
+        .button(
+          'D',
+          () => player.moveRight(),
+          {
+            onUp: () => player.stopRight()
+          }
+        ).build()
+      ).build(),
+      new HTMLBuilder('button')
+      .button(
+        'D',
+        () => player.dash()
+      ).build()
+    ).build(),
+    new HTMLBuilder('button')
+    .button(
+      'L',
+      () => player.attack()
+    ).build(),
+    new HTMLBuilder('button')
+    .button(
+      'R',
+      () => player.weaponSkill()
+    ).build()
+  ).build();
+  game.addElement(uiContainer);
 }
 
 game.addEntity(endText);

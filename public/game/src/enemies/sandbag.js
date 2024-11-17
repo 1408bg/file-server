@@ -1,4 +1,5 @@
 import { Size, Position } from '../../graphic/data.mjs';
+import Duration from '../../util/duration.mjs';
 import Enemy from './enemy.js';
 
 class Sandbag extends Enemy {
@@ -15,6 +16,7 @@ class Sandbag extends Enemy {
       new Size(60, 120).scale(factor),
       damage,
       health,
+      new Duration({milisecond: 500}),
       weight,
       exp,
       moveSpeed

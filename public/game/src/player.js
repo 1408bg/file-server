@@ -25,6 +25,35 @@ class Player {
     this.levelUpQueue = [];
     this.isProcessingLevelUp = false;
     this.moveSpeed = 4;
+    this.keyboardEventListener = (type, event) => {
+      if (type === 'keydown') {
+        if (event.key === 'a') {
+          this.moveLeft();
+        } else if (event.key === 'd') {
+          this.moveRight();
+        } else if (event.key === 'w') {
+          this.jump();
+        } else if (event.key === ' ') {
+          this.dash();
+        }
+      } else if (type === 'keyup') {
+        if (event.key === 'a') {
+          this.stopLeft();
+        } if (event.key === 'd') {
+          this.stopRight();
+        }
+      }
+    };
+    this.mouseEventListener = (type, button, event) => {
+      event.preventDefault();
+      if (type === 'mousedown') {
+        if (button === 'left') {
+          this.attack();
+        } else {
+          this.weaponSkill();
+        }
+      }
+    };
     
     this.sprite = new Sprite(
       position,
@@ -70,43 +99,61 @@ class Player {
     };
     this.pausedState = null;
 
-    this.keyboardEventListener = null;
-    this.setupKeyboardControls();
+    this.setupEventControls();
     this.initializeGameObjects();
   }
 
-  setupKeyboardControls() {
-    this.keyboardEventListener = this.game.addKeyboardEventListener((type, event) => {
-      if (type === 'keydown') {
-        if (event.key === 'ArrowLeft') {
-          this.keys[0] = true;
-          this.lastDirection = -1;
-        } else if (event.key === 'ArrowRight') {
-          this.keys[1] = true;
-          this.lastDirection = 1;
-        } else if (this.checkGround() && event.key === 'c') {
-          this.verticalVelocity -= 15;
-        } else if (this.canDash && event.key === 'z') {
-          this.coroutines.dash = this.game.startCoroutine(this.dashPlayer.bind(this));
-        } else if (this.canAttack && event.key === 'x') {
-          this.coroutines.attack = this.game.startCoroutine(this.attack.bind(this));
-        } else if (this.canWeaponSkill && event.key === 'a') {
-          this.game.startCoroutine(this.weaponSkill.bind(this));
-        }
-      } else if (type === 'keyup') {
-        if (event.key === 'ArrowLeft') {
-          this.keys[0] = false;
-          if (this.keys[1]) {
-            this.lastDirection = 1;
-          }
-        } if (event.key === 'ArrowRight') {
-          this.keys[1] = false;
-          if (this.keys[0]) {
-            this.lastDirection = -1;
-          }
-        }
-      }
-    });
+  moveLeft() {
+    this.keys[0] = true;
+    this.lastDirection = -1;
+  }
+
+  stopLeft() {
+    this.keys[0] = false;
+    if (this.keys[1]) {
+      this.lastDirection = 1;
+    }
+  }
+
+  moveRight() {
+    this.keys[1] = true;
+    this.lastDirection = 1;
+  }
+
+  stopRight() {
+    this.keys[1] = false;
+    if (this.keys[0]) {
+      this.lastDirection = -1;
+    }
+  }
+
+  jump() {
+    if (this.checkGround()) {
+      this.verticalVelocity -= 15;
+    }
+  }
+
+  dash() {
+    if (this.canDash) {
+      this.coroutines.dash = this.game.startCoroutine(this.dashFlow.bind(this));
+    }
+  }
+
+  attack() {
+    this.coroutines.attack = this.game.startCoroutine(this.attackFlow.bind(this));
+  }
+
+  weaponSkill() {
+    if (this.canWeaponSkill) {
+      this.game.startCoroutine(this.weaponSkillFlow.bind(this));
+    }
+  }
+
+  setupEventControls() {
+    if (this.game.platform === 'WEB') {
+      this.game.addKeyboardEventListener(this.keyboardEventListener);
+      this.game.addMouseEventListener(this.mouseEventListener);
+    }
   }
 
   initializeGameObjects() {
@@ -117,14 +164,14 @@ class Player {
     this.game.addEntity(this.expBar);
     this.sprite.startAnimation(this.game);
     
-    this.coroutines.movePlayer = this.game.startCoroutine(this.movePlayer.bind(this));
-    this.coroutines.moveWeapon = this.game.startCoroutine(this.moveWeapon.bind(this));
-    this.coroutines.applyGravity = this.game.startCoroutine(this.applyGravity.bind(this));
+    this.coroutines.movePlayer = this.game.startCoroutine(this.moveCoroutine.bind(this));
+    this.coroutines.moveWeapon = this.game.startCoroutine(this.moveWeaponCoroutine.bind(this));
+    this.coroutines.applyGravity = this.game.startCoroutine(this.gravityCoroutine.bind(this));
     
     this.sprite.play();
   }
 
-  *movePlayer() {
+  *moveCoroutine() {
     while (1) {
       if (this.canDash && (this.keys[0] || this.keys[1]) && !(this.keys[0] && this.keys[1])) {
         this.sprite.setState(1);
@@ -138,18 +185,18 @@ class Player {
     }
   }
 
-  *weaponSkill() {
+  *weaponSkillFlow() {
     this.canWeaponMove = false;
     this.canWeaponSkill = false;
     this.canAttack = false;
     yield* this.weapon.skill(this.sprite, this.lastDirection);
-    yield waitForDuration(new Duration({second: 3}));
     this.canAttack = true;
-    this.canWeaponSkill = true;
     this.canWeaponMove = true;
+    yield waitForDuration(this.weapon.skillCooldown);
+    this.canWeaponSkill = true;
   }
 
-  *moveWeapon() {
+  *moveWeaponCoroutine() {
     while (1) {
       if (this.canWeaponMove) {
         const direction = this.lastDirection === -1;
@@ -181,6 +228,7 @@ class Player {
     this.health += value;
     this.health = Math.min(this.health, this.maxHealth);
     if (this.health <= 0) {
+      this.healthBar.setValue(-999);
       this.onDead();
     }
     this.healthBar.setValue(this.health/this.maxHealth*100);
@@ -237,26 +285,9 @@ class Player {
     }
   
     this.isProcessingLevelUp = false;
-  }  
-
-  *applyGravity() {
-    while (true) {
-      if (this.currentFloor) {
-        this.sprite.position.y = this.currentFloor - 10;
-        this.currentFloor = null;
-      }
-      else if (!this.checkGround()) {
-        this.verticalVelocity = Math.min(this.verticalVelocity + this.GRAVITY, this.MAX_VELOCITY);
-        this.sprite.position.y += this.verticalVelocity;
-        if (!this.game.inGame(this.sprite)) {
-          this.addHealth(-1);
-        }
-      }
-      yield null;
-    }
   }
 
-  *dashPlayer() {
+  *dashFlow() {
     this.canDash = false;
     const dashForce = 16;
     const friction = 0.4;
@@ -278,7 +309,7 @@ class Player {
     this.canDash = true;
   }
 
-  *attack() {
+  *attackFlow() {
     if (this.canAttack) {
       this.canAttack = false;
       yield* this.weapon.attackAnimation();
@@ -286,7 +317,7 @@ class Player {
     }
   }
 
-  *applyGravity() {
+  *gravityCoroutine() {
     while (true) {
       if (this.currentFloor) {
         this.sprite.position.y = this.currentFloor - 10;
@@ -303,7 +334,7 @@ class Player {
     }
   }
 
-  *dashPlayer() {
+  *dashFlow() {
     this.canDash = false;
     const dashForce = 16;
     const friction = 0.4;
@@ -325,7 +356,7 @@ class Player {
     this.canDash = true;
   }
 
-  *attack() {
+  *attackFlow() {
     if (this.canAttack) {
       this.canAttack = false;
       yield* this.weapon.attackAnimation();
@@ -338,14 +369,11 @@ class Player {
       keys: [false, false],
       canDash: true,
       canAttack: true,
-      coroutines: { ...this.coroutines },
-      keyboardEventListener: this.keyboardEventListener
+      coroutines: { ...this.coroutines }
     };
     
-    if (this.keyboardEventListener) {
-      this.game.removeKeyboardEventListener(this.keyboardEventListener);
-      this.keyboardEventListener = null;
-    }
+    this.game.removeKeyboardEventListener(this.keyboardEventListener);
+    this.game.removeMouseEventListener(this.mouseEventListener);
     
     for (const key in this.coroutines) {
       if (this.coroutines[key]) {
@@ -362,11 +390,11 @@ class Player {
     if (this.pausedState) {
       this.keys = this.pausedState.keys;
       
-      this.coroutines.movePlayer = this.game.startCoroutine(this.movePlayer.bind(this));
-      this.coroutines.moveWeapon = this.game.startCoroutine(this.moveWeapon.bind(this));
-      this.coroutines.applyGravity = this.game.startCoroutine(this.applyGravity.bind(this));
+      this.coroutines.movePlayer = this.game.startCoroutine(this.moveCoroutine.bind(this));
+      this.coroutines.moveWeapon = this.game.startCoroutine(this.moveWeaponCoroutine.bind(this));
+      this.coroutines.applyGravity = this.game.startCoroutine(this.gravityCoroutine.bind(this));
 
-      this.keyboardEventListener = this.game.addKeyboardEventListener(this.pausedState.keyboardEventListener);
+      this.setupEventControls();
       
       this.canDash = this.pausedState.canDash;
       this.canAttack = this.pausedState.canAttack;

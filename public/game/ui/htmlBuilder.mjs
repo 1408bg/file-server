@@ -48,7 +48,6 @@ class HTMLBuilder {
     return this;
   }
 
-
   /**
   * @param {number} elevation - 그림자 깊이 (0~24)
   * @returns {HTMLBuilder}
@@ -123,10 +122,14 @@ class HTMLBuilder {
   * @returns {HTMLBuilder}
   */
   setSize(size) {
-    return this.setStyles({
-      'width': `${size.width}px`,
-      'height': `${size.height}px`
-    });
+    const sizeStyle = {};
+    if (size.width !== undefined) {
+      sizeStyle['width'] = size.width+'px';
+    }
+    if (size.height !== undefined) {
+      sizeStyle['height'] = size.height+'px';
+    }
+    return this.setStyles(sizeStyle);
   }
 
   setPosition(position) {
@@ -142,9 +145,18 @@ class HTMLBuilder {
   * @returns {HTMLBuilder}
   */
   appendChild(child) {
-    this.content.appendChild(
-      child
-    );
+    this.content.appendChild(child);
+    return this;
+  }
+
+  /**
+  * @param  {...HTMLElement} children 
+  * @returns {HTMLBuilder}
+  */
+  append(...children) {
+    children.forEach((child) => {
+      this.content.appendChild(child);
+    });
     return this;
   }
 
@@ -169,30 +181,90 @@ class HTMLBuilder {
   * @param {string} [justifyContent] 주축의 정렬
   * @param {string} [alignItems] 교차축의 정렬
   * @param {string} [direction] 축의 방향
+  * @param {number} [gap] 
   * @returns {HTMLBuilder}
   */
-  flex(justifyContent = 'start', alignItems = 'start', direction = 'row') {
+  flex(justifyContent = 'start', alignItems = 'start', direction = 'row', gap = 0) {
     return this.setStyles({
       'display': 'flex',
       'justify-content': justifyContent,
       'align-items': alignItems,
-      'flex-direction': direction
+      'flex-direction': direction,
+      'gap': `${gap}px`
     });
+  }
+
+  column(...children) {
+    return this.setStyles({
+      'display': 'flex',
+      'flex-direction': 'column'
+    })
+    .append(...children);
+  }
+  
+  row(...children) {
+    return this.setStyles({
+      'display': 'flex',
+      'flex-direction': 'row'
+    })
+    .append(...children);
   }
 
   image(src, alt = 'img', objectFit = 'cover') {
     return this.setAttributes({
       'src': src,
       'alt': alt,
-      'object-fix': objectFit
+      'object-fit': objectFit
     });
   }
 
-  onClick(callback) {
+  onClick(onClick) {
     this.content.addEventListener('click', (event) => {
-      callback(event);
+      onClick(event);
     });
     return this.setStyles({'cursor': 'pointer'});
+  }
+
+  /**
+  * @param {string} text 버튼에 표시될 텍스트
+  * @param {function} onDown 버튼 클릭 시 실행할 콜백 함수
+  * @param {Object} [options] 버튼 스타일을 조정할 수 있는 옵션 객체
+  * @returns {HTMLBuilder} Material 스타일이 적용된 텍스트 버튼을 포함한 HTMLBuilder 인스턴스
+  */
+  button(text, onDown, options = {}) {
+    const defaultOptions = {
+      backgroundColor: '#6200EE',
+      color: 'white',
+      elevation: 2,
+      padding: '12px 24px',
+      borderRadius: '4px',
+      fontSize: '14px',
+      cursor: 'pointer',
+      border: 'none',
+      onUp: null
+    };
+
+    const finalOptions = { ...defaultOptions, ...options };
+
+    this.content.textContent = text;
+    this.content.style.backgroundColor = finalOptions.backgroundColor;
+    this.content.style.color = finalOptions.color;
+    this.content.style.padding = finalOptions.padding;
+    this.content.style.borderRadius = finalOptions.borderRadius;
+    this.content.style.fontSize = finalOptions.fontSize;
+    this.content.style.border = 'none';
+    this.content.style.outline = 'none';
+    this.content.style.cursor = finalOptions.cursor;
+    this.setElevation(finalOptions.elevation, this.content);
+
+    this.content.addEventListener('mousedown', onDown);
+    this.content.addEventListener('touchstart', onDown);
+    if (finalOptions.onUp) {
+      this.content.addEventListener('mouseup', finalOptions.onUp);
+      this.content.addEventListener('touchend', finalOptions.onUp);
+      this.content.addEventListener('touchcancel', finalOptions.onUp);
+    }
+    return this;
   }
 
   build() {

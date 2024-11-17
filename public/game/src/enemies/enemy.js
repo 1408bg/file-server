@@ -5,7 +5,23 @@ import { Decoratable } from '../../entity/data.mjs';
 import ProgressIndicator from '../../ui/progressIndicator.mjs';
 
 class Enemy {
-  constructor(game, position, size, onDead, spritePath, frames, states, hitboxPosition, hitboxSize, damage, maxHealth, weight = 1, exp = 1, moveSpeed = 3) {
+  constructor(
+    game,
+    position,
+    size,
+    onDead,
+    spritePath,
+    frames,
+    states,
+    hitboxPosition,
+    hitboxSize,
+    damage,
+    maxHealth,
+    attackSpeed = new Duration({milisecond: 0}),
+    weight = 1,
+    exp = 1,
+    moveSpeed = 3
+  ) {
     this.game = game;
     this.health = maxHealth;
     this.maxHealth = maxHealth;
@@ -136,7 +152,7 @@ class Enemy {
 
   *knockback() {
     const knockbackDirection = this.sprite.position.x > this.game.player.sprite.position.x ? 1 : -1;
-    const dashForce = 10 - this.weight;
+    const dashForce = 10*this.game.player.weapon.force - this.weight;
     const friction = 0.4;
     let velocity = dashForce * knockbackDirection;
     
@@ -152,6 +168,8 @@ class Enemy {
       
       yield null;
     }
+
+    yield waitForDuration(this.attackSpeed);
 
     this.canAttack = true;
   }
@@ -169,7 +187,7 @@ class Enemy {
       this.game.stopCoroutine(this.coroutines.attack);
       this.coroutines.attack = null;
     }
-    this.health = this.health - damage;
+    this.health -= damage;
     if (this.health <= 0) {
       this.destroy();
       return;
