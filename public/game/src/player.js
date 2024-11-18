@@ -26,20 +26,21 @@ class Player {
     this.isProcessingLevelUp = false;
     this.moveSpeed = 4;
     this.keyboardEventListener = (type, event) => {
+      const key = event.key.toLowerCase();
       if (type === 'keydown') {
-        if (event.key === 'a') {
+        if (key === 'a') {
           this.moveLeft();
-        } else if (event.key === 'd') {
+        } else if (key === 'd') {
           this.moveRight();
-        } else if (event.key === 'w') {
+        } else if (key === 'w') {
           this.jump();
-        } else if (event.key === ' ') {
+        } else if (key === ' ') {
           this.dash();
         }
       } else if (type === 'keyup') {
-        if (event.key === 'a') {
+        if (key === 'a') {
           this.stopLeft();
-        } if (event.key === 'd') {
+        } if (key === 'd') {
           this.stopRight();
         }
       }
