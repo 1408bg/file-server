@@ -169,8 +169,11 @@ class Enemy {
       yield null;
     }
 
-    yield waitForDuration(this.attackSpeed);
+    yield* this.attackCooldown();
+  }
 
+  *attackCooldown() {
+    yield waitForDuration(this.attackSpeed);
     this.canAttack = true;
   }
 
@@ -185,6 +188,7 @@ class Enemy {
     if (this.hitCooldown || this.health <= 0) return;
     if (this.coroutines.attack) {
       this.game.stopCoroutine(this.coroutines.attack);
+      this.game.startCoroutine(this.attackCooldown.bind(this));
       this.coroutines.attack = null;
     }
     this.health -= damage;
