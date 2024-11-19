@@ -17,82 +17,41 @@ class SpriteAnimater {
   */
   constructor(entity, frames, states, interval = 24) {
     this.entity = entity;
+    this.isPlaying = false;
     this.frames = frames;
     this.states = states;
-    this.currentFrame = 0;
-    this.currentState = 0;
     if (interval instanceof Number) {
       this.interval = new Duration({ milisecond: 1000 / this.interval });
     } else {
       this.interval = interval;
     }
-    this.isPlaying = false;
-    this.shouldStop = false;
   }
 
-  /**
-  * 애니메이션 상태를 변경합니다.
-  * @param {number} state 변경할 상태 인덱스
-  */
-  setState(state) {
-    if (state != this.currentState && state >= 0 && state < this.states) {
-      this.currentState = state;
-      this.updateFrame();
-    }
-  }
-
-  /**
-  * 애니메이션을 재생합니다.
-  */
-  play() {
+  start() {
     this.isPlaying = true;
   }
 
-  /**
-  * 애니메이션을 일시정지합니다.
-  */
-  pause() {
-    this.isPlaying = false;
-  }
-
-  /**
-  * 애니메이션을 정지하고 첫 프레임으로 되돌립니다.
-  */
   stop() {
     this.isPlaying = false;
-    this.shouldStop = true;
-    this.currentFrame = 0;
-    this.updateFrame();
   }
 
-  /**
-  * 현재 프레임에 맞게 스프라이트 위치를 업데이트합니다.
-  */
-  updateFrame() {
-    if (this.isPlaying) {
-      if (this.entity.flip) {
-        this.entity.setStyle(
-          'backgroundPosition',
-          `-${((this.frames - 1) - this.currentFrame) * this.entity.size.width}px -${this.currentState * this.entity.size.height}px`
-        );
-      } else {
-        this.entity.setStyle(
-          'backgroundPosition',
-          `-${this.currentFrame * this.entity.size.width}px -${this.currentState * this.entity.size.height}px`
-        );
-      }
-      this.currentFrame = (this.currentFrame + 1) % this.frames;
+  set(state, frame) {
+    if (this.entity.flip) {
+      this.entity.setStyle(
+        'backgroundPosition',
+        `-${((this.frames - 1) - frame) * this.entity.size.width}px -${state * this.entity.size.height}px`
+      );
+    } else {
+      this.entity.setStyle(
+        'backgroundPosition',
+        `-${frame * this.entity.size.width}px -${state * this.entity.size.height}px`
+      );
     }
   }
-
-  /**
-  * 애니메이션 프레임을 업데이트하는 코루틴입니다.
-  */
-  *animate() {
-    while (!this.shouldStop) {
-      if (this.isPlaying) {
-        this.updateFrame();
-      }
+  
+  *animate(state) {
+    for (let i = 0; i < this.frames && this.isPlaying; i++) {
+      this.set(state, i);
       yield waitForDuration(this.interval);
     }
   }

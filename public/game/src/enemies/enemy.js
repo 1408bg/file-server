@@ -28,11 +28,13 @@ class Enemy {
     this.onDead = onDead;
     this.isHit = false;
     this.canAttack = true;
+    this.isAttack = false;
     this.hitCooldown = false;
     this.damage = damage;
     this.weight = weight;
     this.exp = exp;
     this.moveSpeed = moveSpeed;
+    this.attackSpeed = attackSpeed;
     
     this.sprite = new Sprite(
       position,
@@ -67,7 +69,8 @@ class Enemy {
       checkCollision: null,
       updatePositions: null,
       attack: null,
-      knockback: null
+      knockback: null,
+      attackAnimation: null
     };
     this.pausedState = null;
 
@@ -79,13 +82,13 @@ class Enemy {
     this.sprite = this.game.addEntity(this.sprite);
     this.hitbox = this.game.addEntity(this.hitbox);
     this.healthBar = this.game.addEntity(this.healthBar);
-    this.sprite.startAnimation(this.game);
-    this.sprite.play();
+    this.sprite.startAnimation();
   }
 
   startBehavior() {
     this.coroutines.checkCollision = this.game.startCoroutine(this.checkCollision.bind(this));
     this.coroutines.updatePositions = this.game.startCoroutine(this.updatePositions.bind(this));
+    this.game.startCoroutine(this.sprite.animationLoop.bind(this.sprite));
   }
 
   *checkCollision() {
@@ -105,37 +108,42 @@ class Enemy {
 
   *attack() {
     this.canAttack = false;
-    this.sprite.setState(1);
     yield waitForDuration(new Duration({milisecond: 200}));
-    if (this.sprite.animation.currentState === 1) {
+    if (this.isAttack) {
       this.game.player.requestDamage(this.damage);
     }
     yield waitForDuration(new Duration({milisecond: 200}));
-    this.canAttack = true;
+    yield* this.attackCooldown.bind(this)();
+  }
+
+  *attackAnimation() {
+    this.isAttack = true;
+    yield* this.sprite.animation(1);
+    this.isAttack = false;
+    this.sprite.animater.set(1, 0);
   }
 
   *updatePositions() {
+    const playerSprite = this.game.player.sprite;
     while (true) {
       const scaleX = this.sprite.transforms.scaleX || 1;
-      const minDistance = Math.pow(this.game.player.sprite.size.width/2, 2);
+      const minDistance = Math.pow(playerSprite.size.width/2, 2);
       
       if (this.health > 0) {
-        const playerPos = this.game.player.sprite.position;
+        const playerPos = playerSprite.position;
         const enemyPos = this.sprite.position;
-        const isCollide = 5 > Math.abs(playerPos.x - enemyPos.x);
+        const isCollide = 10 > Math.abs(playerPos.x - enemyPos.x);
         const direction = playerPos.x > enemyPos.x ? 1 : -1;
         
         const distance = enemyPos.distance(playerPos);
         
-        if (distance > minDistance) {
+        if (distance > minDistance && !isCollide) {
           this.sprite.setState(0);
           this.sprite.position.x += direction * this.moveSpeed;
           this.sprite.setTransform('scaleX', direction);
-        } else if (this.canAttack) {
+        } else if (this.canAttack && distance < minDistance) {
           this.coroutines.attack = this.game.startCoroutine(this.attack.bind(this));
-        } else if (!isCollide) {
-          this.sprite.position.x += direction * this.moveSpeed;
-          this.sprite.setTransform('scaleX', direction);
+          this.coroutines.attackAnimation = this.game.startCoroutine(this.attackAnimation.bind(this));
         }
       }
 
@@ -156,6 +164,7 @@ class Enemy {
     const friction = 0.4;
     let velocity = dashForce * knockbackDirection;
     
+    this.sprite.animater.set(0, 0);
     while (true) {
       this.sprite.position.x += velocity;
       velocity = velocity > 0
@@ -168,8 +177,6 @@ class Enemy {
       
       yield null;
     }
-
-    yield* this.attackCooldown();
   }
 
   *attackCooldown() {
@@ -188,8 +195,10 @@ class Enemy {
     if (this.hitCooldown || this.health <= 0) return;
     if (this.coroutines.attack) {
       this.game.stopCoroutine(this.coroutines.attack);
+      this.game.stopCoroutine(this.coroutines.attackAnimation);
       this.game.startCoroutine(this.attackCooldown.bind(this));
       this.coroutines.attack = null;
+      this.coroutines.attackAnimation = null;
     }
     this.health -= damage;
     if (this.health <= 0) {
@@ -199,7 +208,6 @@ class Enemy {
     this.healthBar.setValue(this.health / this.maxHealth * 100);
     this.hitCooldown = true;
     this.coroutines.knockback = this.game.startCoroutine(this.knockback.bind(this));
-    this.sprite.setStyle('opacity', '0.5');
     this.coroutines.hitAnimation = this.game.startCoroutine(this.hitAnimation.bind(this));
   }
 
@@ -231,7 +239,7 @@ class Enemy {
     }
     this.sprite.setStyle('opacity', '1');
 
-    this.sprite.pause();
+    this.sprite.stopAnimation();
     this.hitbox.visibility(false);
     this.healthBar.visibility(false);
   }
@@ -252,7 +260,7 @@ class Enemy {
     this.healthBar.visibility(true);
 
     this.startBehavior();
-    this.sprite.play();
+    this.sprite.startAnimation();
 
     this.pausedState = null;
   }

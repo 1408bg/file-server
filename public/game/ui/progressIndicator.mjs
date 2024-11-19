@@ -13,10 +13,12 @@ class ProgressIndicator extends Entity {
   * @param {HTMLElement} body 요소
   * @param {number} value 진행도 (0~100)
   */
-  constructor(position, size, body, value) {
+  constructor(position, size, body, value, type) {
     super(position, size, body, 10);
     this.value = value;
+    this.type = type;
   }
+
   /**
   * 선형 ProgressIndicator를 반환합니다.
   * @param {Position} position 위치
@@ -25,17 +27,24 @@ class ProgressIndicator extends Entity {
   * @param {Color} progressColor 진행 막대 색
   * @param {number} [value] 진행도 (0~100)
   * @param {number} [duration] 변경 속도
+  * @param {boolean} [isVertical] 세로로 표시할지 여부
   * @returns {ProgressIndicator} LinerProgressIndicator
   */
-  static liner(position, size, backgroundColor, progressColor, value = 0, duration = 0) {
+  static liner(position, size, backgroundColor, progressColor, value = 0, duration = 0, isVertical = false) {
     const content = document.createElement("div");
     content.style.width = `${size.width}px`;
     content.style.height = `${size.height}px`;
     content.style.backgroundColor = backgroundColor.toString();
+    
     const line = document.createElement("div");
-    line.style.width = `${value}%`;
-    line.style.height = `${size.height}px`;
-    line.style.transition = `width ${duration}s`;
+    if (isVertical) {
+      line.style.height = `${value}%`;
+      line.style.width = `${size.width}px`;
+    } else {
+      line.style.width = `${value}%`;
+      line.style.height = `${size.height}px`;
+    }
+    line.style.transition = `width ${duration}s, height ${duration}s`;
     line.style.backgroundColor = progressColor.toString();
     line.style.zIndex = "11";
     content.appendChild(line);
@@ -43,7 +52,8 @@ class ProgressIndicator extends Entity {
       position,
       size,
       content,
-      value
+      value,
+      isVertical ? 'vertical' : 'horizontal'
     );
   }
 
@@ -94,7 +104,8 @@ class ProgressIndicator extends Entity {
       position,
       size,
       content,
-      value
+      value,
+      'circular'
     );
   }
 
@@ -106,7 +117,11 @@ class ProgressIndicator extends Entity {
     value = value > 100 ? 100 : value;
     const content = this.originalContent();
     if (content.children.length === 1) {
-      content.children[0].style.width = `${value}%`;
+      if (this.type === 'vertical') {
+        content.children[0].style.height = `${value}%`;
+      } else {
+        content.children[0].style.width = `${value}%`;
+      }
     } else {
       const rotation = (value / 100) * 360;
       content.children[0].style.transform = `rotate(${rotation}deg)`;

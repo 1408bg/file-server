@@ -1,8 +1,9 @@
 import { Sprite } from '../entity/data.mjs';
-import { Size, Position, Color } from '../graphic/data.mjs';
+import { Size, Position, Color, EdgeInsets } from '../graphic/data.mjs';
 import { ProgressIndicator } from '../ui/data.mjs';
 import { Duration, waitForDuration } from '../util/data.mjs';
 import Scythe from './weapons/scythe.js';
+import HTMLBuilder from '../ui/htmlBuilder.mjs';
 
 class Player {
   constructor(game, position, groundHeight, onDead, onLevelUp) {
@@ -69,24 +70,6 @@ class Player {
 
     this.weapon = new Scythe(new Position(position.x, position.y));
 
-    this.healthBar = ProgressIndicator.liner(
-      new Position(this.game.width/2 - this.game.width*0.4, this.game.height - 100),
-      new Size(this.game.width*0.8, 50),
-      Color.fromHex('#440000'),
-      Color.fromHex('#ff0000'),
-      100,
-      0.3
-    );
-
-    this.expBar = ProgressIndicator.liner(
-      new Position(this.game.width/2 - this.game.width*0.4, this.game.height - 100),
-      new Size(this.game.width*0.8, 20),
-      Color.fromHex('#226622'),
-      Color.fromHex('#00ff00'),
-      0,
-      0.3
-    )
-
     this.GRAVITY = 0.6;
     this.MAX_VELOCITY = 16;
     this.groundHeight = groundHeight;
@@ -101,6 +84,7 @@ class Player {
     this.pausedState = null;
 
     this.setupEventControls();
+    this.buildUI();
     this.initializeGameObjects();
   }
 
@@ -163,13 +147,90 @@ class Player {
     this.game.addEntity(this.weapon.hitbox);
     this.game.addEntity(this.healthBar);
     this.game.addEntity(this.expBar);
-    this.sprite.startAnimation(this.game);
     
     this.coroutines.movePlayer = this.game.startCoroutine(this.moveCoroutine.bind(this));
     this.coroutines.moveWeapon = this.game.startCoroutine(this.moveWeaponCoroutine.bind(this));
     this.coroutines.applyGravity = this.game.startCoroutine(this.gravityCoroutine.bind(this));
+    this.game.startCoroutine(this.sprite.animationLoop.bind(this.sprite));
     
-    this.sprite.play();
+    this.sprite.startAnimation();
+  }
+
+  buildUI() {
+    const game = this.game;
+    const isApp = game.platform !== 'WEB';
+    this.healthBar = ProgressIndicator.liner(
+      isApp ? new Position(0, 50) : new Position(this.game.width/2 - this.game.width*0.4, this.game.height - 100),
+      isApp ? new Size(game.width*0.4, 40) : new Size(game.width*0.8, 40),
+      Color.fromHex('#440000'),
+      Color.fromHex('#ff0000'),
+      100,
+      0.3
+    );
+    this.expBar = ProgressIndicator.liner(
+      isApp ? new Position(0, 50) : new Position(this.game.width/2 - this.game.width*0.4, this.game.height - 100),
+      isApp ? new Size(game.width*0.4, 15) : new Size(game.width*0.8, 15),
+      Color.fromHex('#226622'),
+      Color.fromHex('#00ff00'),
+      0,
+      0.3
+    );
+    HTMLBuilder.defaultPadding = EdgeInsets.symmetric({vertical: 4, horizontal: 8});
+    if (game.platform !== 'WEB') {
+      const uiContainer = new HTMLBuilder('div')
+      .setSize(new Size(game.width))
+      .setLayer(31)
+      .flex('space-evenly', 'center', 'row', 10)
+      .setPosition(new Position(0, game.height-100))
+      .append(
+        new HTMLBuilder('div')
+        .column(
+          new HTMLBuilder('button')
+          .button(
+            '↑',
+            () => this.jump()
+          ).build(),
+          new HTMLBuilder('div')
+          .row(
+            new HTMLBuilder('button')
+            .button(
+              '←',
+              () => this.moveLeft(),
+              {
+                onUp: () => this.stopLeft()
+              }
+            ).build(),
+            new HTMLBuilder('button')
+            .button(
+              '→',
+              () => this.moveRight(),
+              {
+                onUp: () => this.stopRight()
+              }
+            ).build()
+          ).build(),
+          new HTMLBuilder('button')
+          .button(
+            '↓',
+            () => this.dash()
+          ).build()
+        ).build(),
+        new HTMLBuilder('div')
+        .column(
+          new HTMLBuilder('button')
+          .button(
+            '⚔️',
+            () => this.attack()
+          ).build(),
+          new HTMLBuilder('button')
+          .button(
+            '💫',
+            () => this.weaponSkill()
+          ).build()
+        ).build()
+      ).build();
+      game.addElement(uiContainer);
+    }
   }
 
   *moveCoroutine() {
@@ -368,8 +429,6 @@ class Player {
   pause() {
     this.pausedState = {
       keys: [false, false],
-      canDash: true,
-      canAttack: true,
       coroutines: { ...this.coroutines }
     };
     
@@ -383,7 +442,7 @@ class Player {
       }
     }
     
-    this.sprite.pause();
+    this.sprite.stopAnimation();
     this.weapon.pause();
   }
 
@@ -397,10 +456,10 @@ class Player {
 
       this.setupEventControls();
       
-      this.canDash = this.pausedState.canDash;
-      this.canAttack = this.pausedState.canAttack;
+      this.canDash = true;
+      this.canAttack = true;
       
-      this.sprite.play();
+      this.sprite.startAnimation();
       this.weapon.resume();
       this.pausedState = null;
     }

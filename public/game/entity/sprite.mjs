@@ -21,66 +21,37 @@ class Sprite extends Decoratable {
   */
   constructor(position, size, spriteSheet, frames, states, interval, anchor = new Position(0, 0)) {
     super(position, size, spriteSheet, 0, undefined, anchor);
-    this.animation = new SpriteAnimater(this, frames, states, interval);
+    this.animater = new SpriteAnimater(this, frames, states, interval);
+    this.shift = false;
     this.animationCoroutine = null;
-    this.setStyle('background-size', `${this.size.width*this.animation.frames}px ${this.size.height*this.animation.states}px`);
+    this.currentState = 0;
+    this.setStyle('background-size', `${this.size.width*this.animater.frames}px ${this.size.height*this.animater.states}px`);
   }
 
-  /**
-  * 애니메이션 상태를 변경합니다.
-  * @param {int} state 변경할 상태 인덱스
-  */
+  startAnimation() {
+    this.animater.start();
+  }
+
+  stopAnimation() {
+    this.animater.stop();
+  }
+
   setState(state) {
-    this.animation.setState(state);
+    this.currentState = state;
   }
 
-  /**
-  * 애니메이션을 재생합니다.
-  */
-  play() {
-    this.animation.play();
+  *animation(state) {
+    this.shift = true;
+    yield* this.animater.animate(state);
+    this.shift = false;
   }
-
-  /**
-  * 애니메이션을 일시정지합니다.
-  */
-  pause() {
-    this.animation.pause();
-  }
-
-  /**
-  * 애니메이션을 정지하고 첫 프레임으로 되돌립니다.
-  */
-  stop() {
-    this.animation.stop();
-  }
-
-  /**
-  * 애니메이션 코루틴을 시작합니다.
-  * @param {Game} game 게임 인스턴스
-  */
-  startAnimation(game) {
-    if (this.game && this.animationCoroutine) {
-      this.game.stopCoroutine(this.animationCoroutine);
+  
+  *animationLoop() {
+    while (true) {
+      yield null;
+      if (this.shift) continue;
+      yield* this.animater.animate(this.currentState);
     }
-    this.game = game;
-    this.animationCoroutine = game.startCoroutine(this.animation.animate.bind(this.animation));
-  }
-
-  destroy() {
-    if (this.game && this.animationCoroutine) {
-      this.game.stopCoroutine(this.animationCoroutine);
-      this.animationCoroutine = null;
-    }
-    if (this.animation) {
-      this.animation.stop();
-      this.animation = null;
-    }
-    if (this.element && this.element.parentNode) {
-      this.element.parentNode.removeChild(this.element);
-      this.element = null;
-    }
-    super.destroy();
   }
 }
 

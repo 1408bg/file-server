@@ -14,7 +14,7 @@ const game = new Game(root);
 let playing = true;
 let genCount = 0;
 let stage = 1;
-const groundHeight = game.height/2+50;
+const groundHeight = game.height/2+150;
 const palette = [
   Color.fromHex('#999999'),
   Color.fromHex('#4CEDE5'),
@@ -132,17 +132,6 @@ groundPrefab.instantiate(
   }
 );
 
-/*
-groundPrefab.instantiate(
-  (e) => {
-    e.position.y = groundHeight - 160;
-    e.size.width *= 0.4;
-    e.position.x = game.width/2 - e.size.width/2;
-    return e;
-  }
-);
-*/
-
 game.groundPrefab = groundPrefab;
 
 const endText = new Text(
@@ -248,6 +237,9 @@ const onLevelUp = async () => {
     const overlay = new HTMLBuilder('div')
     .setPosition(new Position(0, 0))
     .setSize(new Size(game.width, game.height))
+    .setStyles({
+      'position': 'fixed'
+    })
     .setBackgroundColor(new Color(0, 0, 0, 0.4))
     .appendChild(cardContainer)
     .setLayer(30)
@@ -350,59 +342,6 @@ function *stage2() {
     yield null;
   }
   genBoss();
-}
-
-if (1 | game.platform !== 'WEB') {
-  const uiContainer = new HTMLBuilder('div')
-  .setSize(new Size(game.width))
-  .setLayer(31)
-  .flex('center', 'center', 'row', 10)
-  .setPosition(new Position(0, game.height-300))
-  .append(
-    new HTMLBuilder('div')
-    .column(
-      new HTMLBuilder('button')
-      .button(
-        'W',
-        () => player.jump()
-      ).build(),
-      new HTMLBuilder('div')
-      .row(
-        new HTMLBuilder('button')
-        .button(
-          'A',
-          () => player.moveLeft(),
-          {
-            onUp: () => player.stopLeft()
-          }
-        ).build(),
-        new HTMLBuilder('button')
-        .button(
-          'D',
-          () => player.moveRight(),
-          {
-            onUp: () => player.stopRight()
-          }
-        ).build()
-      ).build(),
-      new HTMLBuilder('button')
-      .button(
-        'D',
-        () => player.dash()
-      ).build()
-    ).build(),
-    new HTMLBuilder('button')
-    .button(
-      'L',
-      () => player.attack()
-    ).build(),
-    new HTMLBuilder('button')
-    .button(
-      'R',
-      () => player.weaponSkill()
-    ).build()
-  ).build();
-  game.addElement(uiContainer);
 }
 
 game.addEntity(endText);

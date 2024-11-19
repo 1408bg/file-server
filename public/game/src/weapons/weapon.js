@@ -93,10 +93,6 @@ class Weapon extends Decoratable {
     
     this.pausedState = null;
   }
-
-  startCoroutine(generator) {
-    return this.coroutineManager.startCoroutine(generator);
-  }
 }
 
-export default Weapon; 
+export default Weapon;

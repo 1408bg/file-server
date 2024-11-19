@@ -1,17 +1,23 @@
 // 1
 
 import Color from "../graphic/color.mjs";
+import EdgeInsets from "../graphic/edgeInsets.mjs";
 import Size from "../graphic/size.mjs";
 
 class HTMLBuilder {
   static idCounter = 0;
   static head;
+  static defaultPadding = EdgeInsets.symmetric({vertical: 12, horizontal: 24});
 
   constructor(tagName) {
     /**
     * @type {HTMLElement}
     */
     this.content = document.createElement(tagName);
+  }
+
+  static gap({width = 0, height = 0}) {
+    return new HTMLBuilder('div').setSize(new Size(width, height)).build();
   }
 
   /**
@@ -232,11 +238,12 @@ class HTMLBuilder {
   * @returns {HTMLBuilder} Material 스타일이 적용된 텍스트 버튼을 포함한 HTMLBuilder 인스턴스
   */
   button(text, onDown, options = {}) {
+    const defaultPadding = HTMLBuilder.defaultPadding;
     const defaultOptions = {
       backgroundColor: '#6200EE',
       color: 'white',
       elevation: 2,
-      padding: '12px 24px',
+      padding: `${defaultPadding.top}px ${defaultPadding.right}px ${defaultPadding.bottom}px ${defaultPadding.left}px`,
       borderRadius: '4px',
       fontSize: '14px',
       cursor: 'pointer',
