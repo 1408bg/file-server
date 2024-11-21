@@ -33,14 +33,14 @@ class Scythe extends Weapon {
   *skill(player, direction) {
     this.setForce(1.6);
     this.skillHitted = false;
-    const dashForce = 80;
+    const throwForce = 80;
     const friction = 4;
     let step = 0;
     this.activate();
-    let velocity = dashForce * direction;
+    let velocity = throwForce * direction;
     while (true) {
       this.setTransform('rotate', -step);
-      step += 4;
+      step += 7;
       this.setPosition({x: this.position.x + velocity});
       velocity = velocity > 0
         ? Math.max(0, velocity - friction)
@@ -54,13 +54,14 @@ class Scythe extends Weapon {
     }
     velocity = 1;
     const invert = direction == 1;
+    this.setForce(-1);
     while (invert ? this.position.x > player.position.x : this.position.x < player.position.x) {
       this.setPosition({x: this.position.x + velocity});
       this.setTransform('rotate', -step);
-      step += 4;
+      step += 3;
       velocity = invert
         ? velocity - friction
-        : velocity + friction
+        : velocity + friction;
 
       yield null;
     }

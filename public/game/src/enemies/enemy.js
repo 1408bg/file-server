@@ -1,11 +1,10 @@
-import { Sprite } from '../../entity/data.mjs';
+import { Sprite, Hitbox } from '../../entity/data.mjs';
 import { Size, Position, Color } from '../../graphic/data.mjs';
 import { Duration, waitForDuration } from '../../util/data.mjs';
-import { Decoratable } from '../../entity/data.mjs';
 import ProgressIndicator from '../../ui/progressIndicator.mjs';
 
 class Enemy {
-  constructor(
+  constructor({
     game,
     position,
     size,
@@ -21,7 +20,7 @@ class Enemy {
     weight = 1,
     exp = 1,
     moveSpeed = 3
-  ) {
+  }) {
     this.game = game;
     this.health = maxHealth;
     this.maxHealth = maxHealth;
@@ -47,13 +46,12 @@ class Enemy {
     );
 
     this.hitboxOffset = hitboxPosition;
-    this.hitbox = new Decoratable(
+    this.hitbox = new Hitbox(
       new Position(
         position.x + hitboxPosition.x,
         position.y + hitboxPosition.y
       ),
-      hitboxSize,
-      Color.transparent
+      hitboxSize
     );
 
     this.healthBar = ProgressIndicator.liner(
@@ -127,7 +125,7 @@ class Enemy {
     const playerSprite = this.game.player.sprite;
     while (true) {
       const scaleX = this.sprite.transforms.scaleX || 1;
-      const minDistance = Math.pow(playerSprite.size.width/2, 2);
+      const minDistance = Math.pow(playerSprite.size.width / 2, 2);
       
       if (this.health > 0) {
         const playerPos = playerSprite.position;
@@ -147,12 +145,10 @@ class Enemy {
         }
       }
 
-      this.hitbox.position.x = this.sprite.position.x + this.hitboxOffset.x * scaleX;
-      this.hitbox.position.y = this.sprite.position.y + this.hitboxOffset.y;
-      this.hitbox.setTransform('scaleX', scaleX);
-      
-      this.healthBar.position.x = this.sprite.position.x - this.sprite.size.width*0.25;
-      this.healthBar.position.y = this.sprite.position.y - this.sprite.size.height*0.6;
+      this.hitbox.updatePosition(this.sprite.position, this.hitboxOffset);
+
+      this.healthBar.position.x = this.sprite.position.x - this.sprite.size.width * 0.25;
+      this.healthBar.position.y = this.sprite.position.y - this.sprite.size.height * 0.6;
       
       yield null;
     }

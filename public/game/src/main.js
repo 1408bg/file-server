@@ -65,23 +65,23 @@ const options = [
   },
   {
     title: '가속',
-    description: '이동 속도를 0.4 증가시킨다.',
+    description: '이동 속도를 0.2 증가시킨다.',
     type: 3,
-    value: 0.4,
+    value: 0.2,
     level: 1
   },
   {
     title: '가속+',
-    description: '이동 속도를 0.8 증가시킨다.',
+    description: '이동 속도를 0.4 증가시킨다.',
     type: 3,
-    value: 0.8,
+    value: 0.4,
     level: 2
   },
   {
     title: '가속++',
-    description: '이동 속도를 1.5 증가시킨다.',
+    description: '이동 속도를 0.8 증가시킨다.',
     type: 3,
-    value: 1.5,
+    value: 0.8,
     level: 3
   },
   {
@@ -111,10 +111,32 @@ const options = [
     type: 5,
     value: [0.5, 1.8],
     level: 3
+  },
+  {
+    title: '재생',
+    description: '초당 체력을 0.5 회복한다.',
+    type: 6,
+    value: 0.5,
+    level: 1
+  },
+  {
+    title: '재생+',
+    description: '초당 체력을 1 회복한다.',
+    type: 6,
+    value: 1,
+    level: 2
+  },
+  {
+    title: '재생++',
+    description: '초당 체력을 2 회복한다.',
+    type: 6,
+    value: 2,
+    level: 3
   }
 ]
 const enemys = [];
 let boss;
+let regenerative = 0;
 
 const groundPrefab = new Prefab(
   new Entity(
@@ -226,6 +248,10 @@ const onLevelUp = async () => {
             player.maxHealth *= option.value[0];
             player.weapon.damage *= option.value[1];
             player.addHealth(-player.health*option.value[0]);
+            break;
+          case 6:
+            regenerative += option.value;
+            break;
         }
         game.removeElement(overlay);
         resolve();
@@ -259,58 +285,40 @@ const player = new Player(
 
 function genEnemy(x) {
   enemys.push(
-    new Sandbag(
-      game,
-      new Position(x, groundHeight-10),
-      (enemy) => {
+    new Sandbag({
+      game: game,
+      position: new Position(x, groundHeight-10),
+      onDead: (enemy) => {
         const index = enemys.findIndex((e)=>e===enemy);
         if (index !== -1) enemys.splice(index, 1);
       },
-      5 + stage*5,
-      25 + stage*25
-    )
+      damage: 5 + stage*5,
+      health: 25 + stage*25,
+      moveSpeed: 4.2
+    })
   );
   genCount++;
 }
 
 function genBoss() {
-  boss = new Sandbag(
-    game,
-    new Position(-100, groundHeight-10),
-    () => {
+  boss = new Sandbag({
+    game: game,
+    position: new Position(-100, groundHeight-10),
+    onDead: () => {
       boss = null;
       if (stage === 1) {
-        const dialog = new AlertDialog(
-          '무기 스킬 획득',
-          '우클릭을 통하여 낫 투척 사용 가능',
-          {
-            actions: [
-              {
-                text: '확인',
-                color: palette[2],
-                onClick: () => {
-                  player.canWeaponSkill = true;
-                  dialog.close();
-                  if (!player.isProcessingLevelUp) resume();
-                }
-              }
-            ]
-          }
-        );
-        dialog.show(game);
-        pause();
         game.startCoroutine(stage2);
       } else {
         alert('야호 이겼다~!');
       }
     },
-    10+stage*15,
-    300+stage*300,
-    4+stage,
-    1.6,
-    4,
-    10
-  );
+    damage: 10 + stage*15,
+    health: 300 + stage*300,
+    weight: 4 + stage,
+    factor: 1.6,
+    moveSpeed: 5,
+    exp: 10
+  });
 }
 
 function *stage1() {
@@ -344,5 +352,13 @@ function *stage2() {
   genBoss();
 }
 
+function *regeneration() {
+  while (true) {
+    player.addHealth(regenerative);
+    yield waitForDuration(new Duration({second: 1}));
+  }
+}
+
 game.addEntity(endText);
 game.startCoroutine(stage1);
+game.startCoroutine(regeneration);

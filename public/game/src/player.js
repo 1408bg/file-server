@@ -14,7 +14,7 @@ class Player {
     this.keys = [false, false];
     this.canDash = true;
     this.canAttack = true;
-    this.canWeaponSkill = false;
+    this.canWeaponSkill = true;
     this.canWeaponMove = true;
     this.lastDirection = 1;
     this.verticalVelocity = 0;
@@ -60,7 +60,7 @@ class Player {
     this.sprite = new Sprite(
       position,
       new Size(160, 160),
-      './assets/sheet.png',
+      './assets/player-sheet.png',
       4,
       2,
       new Duration({milisecond: 200}),

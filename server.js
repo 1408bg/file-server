@@ -29,10 +29,8 @@ function getDirectoryList(directoryPath) {
 
 app.get('/file/*', (req, res) => {
   const filePath = path.join(rootDir, req.params[0]);
-  console.log('File path:', filePath);
   res.sendFile(filePath, (err) => {
     if (err) {
-      console.log(err);
       res.status(404).send('<h1>File Not Found</h1>');
     }
   });
@@ -40,15 +38,14 @@ app.get('/file/*', (req, res) => {
 
 app.get('*', async (req, res) => {
   if (req.headers.origin === 'https://file-server.ijw.app') {
-    return res.sendFile(path.join(rootDir, '/file/'+req.path), (err) => {
+    return res.sendFile(path.join(rootDir, 'file', req.path), (err) => {
       if (err) {
-        console.log(err);
         res.status(404).send('<h1>File Not Found</h1>');
       }
     });
   }
+
   let requestedPath = path.join(rootDir, req.path);
-  console.log('Requested path:', requestedPath);
 
   try {
     const stats = fs.statSync(requestedPath);
@@ -71,11 +68,10 @@ app.get('*', async (req, res) => {
       res.sendFile(requestedPath);
     }
   } catch (error) {
-    console.log(error);
     res.status(404).send(`<h1>404 Not Found</h1><code><pre>${error}</pre></code>`);
   }
 });
 
 app.listen(port, () => {
-  console.log(`port: ${port}`);
+  console.log(`Server is running on port ${port}`);
 });
