@@ -65,7 +65,9 @@ app.get('*', async (req, res) => {
       html += `</ul>`;
       res.send(html);
     } else {
-      res.sendFile(requestedPath);
+      // 여기서 파일을 직접 응답하는 부분을 변경합니다.
+      const relativePath = path.relative(rootDir, requestedPath);
+      res.redirect(`/file/${relativePath}`);
     }
   } catch (error) {
     res.status(404).send(`<h1>404 Not Found</h1><code><pre>${error}</pre></code>`);
