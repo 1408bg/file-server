@@ -134,6 +134,7 @@ function setupMainScene() {
   mainScene.addObject({ object: player });
 
   mainScene.onLoad = () => {
+    score = 0;
     player.position = new Vector({ x: game.width / 2, y: 0 });
     startCoroutine(gameLoop);
     startCoroutine(gravityLoop);
