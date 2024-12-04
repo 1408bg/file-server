@@ -117,7 +117,7 @@ function setupMainScene() {
       horizontalForce = Vector.zero;
       if (Input.getKey('a')) horizontalForce.x -= speed;
       if (Input.getKey('d')) horizontalForce.x += speed;
-      if (Input.getKeyDown('w') || Input.getKeyDown(' ') && canJump) {
+      if ((Input.getKeyDown('w') || Input.getKeyDown(' ')) && canJump) {
         verticalForce.y -= 10;
         canJump = false;
       }
@@ -134,6 +134,7 @@ function setupMainScene() {
   mainScene.addObject({ object: player });
 
   mainScene.onLoad = () => {
+    score = 0;
     player.position = new Vector({ x: game.width / 2, y: 0 });
     startCoroutine(gameLoop);
     startCoroutine(gravityLoop);
