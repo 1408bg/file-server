@@ -56,7 +56,7 @@ app.get('*', async (req, res) => {
       files.forEach(file => {
         const relativePath = path.relative(rootDir, file.path);
         if (file.isDirectory) {
-          html += `<li><a href="${relativePath}/">${file.name}/</a></li>`;
+          html += `<li><a href="/${relativePath}/">${file.name}/</a></li>`;
         } else {
           html += `<li><a href="/file/${relativePath}">${file.name}</a></li>`;
         }
